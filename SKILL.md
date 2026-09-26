@@ -36,7 +36,7 @@ node scripts/generate-daily.mjs --date YYYY-MM-DD --body-file /absolute/path/bod
 node scripts/generate-weekly.mjs --week YYYY-Www --body-file /absolute/path/body.md
 
 # Review or incident review
-node scripts/generate-review.mjs --title 'Title' --slug stable-slug --date YYYY-MM-DD --body-file /absolute/path/body.md
+node scripts/generate-review.mjs --title 'Title' --slug stable-slug --date YYYY-MM-DD --source 'sanitized source reference' --body-file /absolute/path/body.md
 ```
 
 After confirmation, use `--execute`. Use `--push --create-pr` only when GitHub CLI authentication is available. The resulting PR must remain a Draft until a human verifies the source, redaction, and conclusions.
@@ -46,7 +46,7 @@ After confirmation, use `--execute`. Use `--push --create-pr` only when GitHub C
 - Never push directly to `main`, bypass validation, or automatically merge.
 - Always preserve any unrelated working-tree changes; stop instead of stashing or resetting them.
 - If `npm run validate` fails, leave the generated branch for review and report the precise failure. Do not retry by weakening validation.
-- Record sources in frontmatter using safe repository-relative paths, stable external links, or sanitized incident references.
+- Pass `--source` for every Review so its frontmatter records a safe repository-relative path, stable external link, or sanitized incident reference.
 - For Wiki changes, use the same guarded Review path unless a dedicated Wiki generator is added and validated.
 
 ## Scheduled Weekly boundary
