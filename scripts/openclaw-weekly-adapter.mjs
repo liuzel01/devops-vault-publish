@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 function fail(message) {
@@ -30,9 +30,18 @@ function isoWeekDates(isoWeek) {
 }
 
 function sourcePaths(repo, isoWeek) {
-  return isoWeekDates(isoWeek)
-    .map((date) => `daily/${date.slice(0, 4)}/${date.slice(5, 7)}/${date}.md`)
-    .filter((relativePath) => existsSync(resolve(repo, relativePath)));
+  return isoWeekDates(isoWeek).flatMap((date) => {
+    const dailyPath = `daily/${date.slice(0, 4)}/${date.slice(5, 7)}/${date}.md`;
+    const reviewDirectory = resolve(repo, 'reviews', date.slice(0, 4));
+    const reviewPrefix = `${date}-`;
+    const reviewPaths = existsSync(reviewDirectory)
+      ? readdirSync(reviewDirectory)
+        .filter((name) => name.startsWith(reviewPrefix) && name.endsWith('.md'))
+        .sort()
+        .map((name) => `reviews/${date.slice(0, 4)}/${name}`)
+      : [];
+    return [dailyPath, ...reviewPaths].filter((relativePath) => existsSync(resolve(repo, relativePath)));
+  });
 }
 
 function parseEnvelope(stdout) {
@@ -63,7 +72,7 @@ const timeout = process.env.DEVOPS_VAULT_WEEKLY_TIMEOUT || '180';
 if (!vaultDir || !existsSync(resolve(vaultDir, '.git'))) fail('DEVOPS_VAULT_DIR must point to the devops-vault Git repository');
 
 const paths = sourcePaths(vaultDir, isoWeek);
-if (paths.length === 0) fail(`no merged Daily documents found for ${isoWeek}; refusing to create an empty Weekly Draft PR`);
+if (paths.length === 0) fail(`no merged Daily or Review documents found for ${isoWeek}; refusing to create an empty Weekly Draft PR`);
 
 const sourceMaterial = paths.map((relativePath) => {
   const content = readFileSync(resolve(vaultDir, relativePath), 'utf8');
@@ -72,7 +81,7 @@ const sourceMaterial = paths.map((relativePath) => {
 
 if (Buffer.byteLength(sourceMaterial, 'utf8') > 200_000) fail('Weekly source material exceeds 200 KiB; split or summarize the Daily documents before scheduling');
 
-const prompt = `You are the scheduled Weekly adapter for a private DevOps knowledge vault. Produce only the Markdown BODY for ISO week ${isoWeek}; do not include YAML frontmatter, a document title, commentary, or code fences around the whole response. Write in the source language.\n\nUse only the supplied merged Daily documents. Do not infer work from calendar time, repository state, or external systems. Summarize completed work, evidence, risks, blockers, and follow-up actions. Preserve source references as repository-relative paths. Never include passwords, API tokens, private keys, cloud access keys, Authorization values, customer data, or unredacted request payloads. If the supplied documents are insufficient for a claimed result, describe the gap rather than inventing it.\n\n${sourceMaterial}`;
+const prompt = `You are the scheduled Weekly adapter for a private DevOps knowledge vault. Produce only the Markdown BODY for ISO week ${isoWeek}; do not include YAML frontmatter, a document title, commentary, or code fences around the whole response. Write in the source language.\n\nUse only the supplied merged Daily and Review documents. Do not infer work from calendar time, repository state, or external systems. Summarize completed work, evidence, risks, blockers, and follow-up actions. Preserve source references as repository-relative paths. Never include passwords, API tokens, private keys, cloud access keys, Authorization values, customer data, or unredacted request payloads. If the supplied documents are insufficient for a claimed result, describe the gap rather than inventing it.\n\n${sourceMaterial}`;
 
 let stdout;
 try {
@@ -96,4 +105,4 @@ if (!envelope.ok || !body) fail('OpenClaw returned no Weekly Markdown body');
 if (body.startsWith('---')) fail('OpenClaw returned YAML frontmatter; the adapter accepts Markdown body only');
 
 writeFileSync(resolve(outputPath), `${body}\n`, { encoding: 'utf8', mode: 0o600 });
-process.stdout.write(`Generated Weekly body for ${isoWeek} from ${paths.length} Daily document(s).\n`);
+process.stdout.write(`Generated Weekly body for ${isoWeek} from ${paths.length} Daily or Review document(s).\n`);

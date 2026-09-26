@@ -4,4 +4,4 @@ OpenClaw skill for publishing reviewed DevOps knowledge to the private `devops-v
 
 The skill deliberately does not replace the existing personal Obsidian archive workflow.
 
-It also contains the approved `scripts/openclaw-weekly-adapter.mjs` implementation for the optional Weekly `launchd` Draft PR flow. The adapter may only summarize merged Daily documents and never performs Git writes itself.
+It also contains the approved `scripts/openclaw-weekly-adapter.mjs` implementation for the optional Weekly `launchd` Draft PR flow. The adapter may only summarize merged Daily and Review documents from the target ISO week, and never performs Git writes itself.
