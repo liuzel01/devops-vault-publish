@@ -53,4 +53,6 @@ After confirmation, use `--execute`. Use `--push --create-pr` only when GitHub C
 
 The scheduler is only for a Weekly Draft PR. Its adapter receives an output path and ISO week, then writes only sanitized Markdown body content. It must not modify Git, create branches, push, create PRs, or expose credentials. The repository script owns Git operations.
 
+`scripts/openclaw-weekly-adapter.mjs` is the approved adapter implementation. It only summarizes existing merged `daily/YYYY/MM/YYYY-MM-DD.md` files for the requested ISO week; no source files means a non-zero exit and no empty Weekly PR. The adapter invokes OpenClaw in direct mode, supplies those Daily files in the prompt, writes only the resulting Markdown body to the caller-provided temporary path, and never writes to the vault repository.
+
 Read `/Users/liuzelin/github/devops-vault/docs/launchd-weekly-adapter.md` when creating or changing that adapter.
